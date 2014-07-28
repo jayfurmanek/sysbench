@@ -31,7 +31,8 @@ typedef struct {
   double              range_max;
   double              range_deduct;
   double              range_mult;
-  pthread_mutex_t     mutex;
+  //pthread_mutex_t     mutex;
+  pthread_spinlock_t  mutex;
 } sb_percentile_t;
 
 int sb_percentile_init(sb_percentile_t *percentile,

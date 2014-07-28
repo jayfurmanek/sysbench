@@ -559,7 +559,7 @@ static void *runner_thread(void *arg)
 static void *eventgen_thread_proc(void *arg)
 {
   unsigned long long pause_ns;
-  unsigned long long prev_ns;
+  //unsigned long long prev_ns;
   unsigned long long next_ns;
   unsigned long long curr_ns;
   unsigned long long intr_ns;
@@ -583,7 +583,7 @@ static void *eventgen_thread_proc(void *arg)
 
   for (;;)
   {
-    prev_ns = curr_ns;
+    //prev_ns = curr_ns;
 
     curr_ns = sb_timer_value(&sb_globals.exec_timer);
 
@@ -762,7 +762,8 @@ static int run_test(sb_test_t *test)
   if (test->ops.prepare != NULL && test->ops.prepare() != 0)
     return 1;
 
-  pthread_mutex_init(&sb_globals.exec_mutex, NULL);
+  //pthread_mutex_init(&sb_globals.exec_mutex, NULL);
+  pthread_spin_init(&sb_globals.exec_mutex, 0);
 
 
   pthread_mutex_init(&event_queue_mutex, NULL);    
@@ -885,7 +886,8 @@ static int run_test(sb_test_t *test)
 
   pthread_mutex_destroy(&rnd_mutex);
 
-  pthread_mutex_destroy(&sb_globals.exec_mutex);
+  //pthread_mutex_destroy(&sb_globals.exec_mutex);
+  pthread_spin_destroy(&sb_globals.exec_mutex);
 
   pthread_mutex_destroy(&thread_start_mutex);
 

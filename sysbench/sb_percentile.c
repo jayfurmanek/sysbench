@@ -56,7 +56,8 @@ int sb_percentile_init(sb_percentile_t *percentile,
   percentile->size = size;
   percentile->total = 0;
 
-  pthread_mutex_init(&percentile->mutex, NULL);
+  //pthread_mutex_init(&percentile->mutex, NULL);
+  pthread_spin_init(&percentile->mutex, 0);
 
   return 0;
 }
@@ -73,10 +74,12 @@ void sb_percentile_update(sb_percentile_t *percentile, double value)
   n = floor((log(value) - percentile->range_deduct) * percentile->range_mult
             + 0.5);
 
-  pthread_mutex_lock(&percentile->mutex);
+  //pthread_mutex_lock(&percentile->mutex);
+  pthread_spin_lock(&percentile->mutex);
   percentile->total++;
   percentile->values[n]++;
-  pthread_mutex_unlock(&percentile->mutex);
+  //pthread_mutex_unlock(&percentile->mutex);
+  pthread_spin_unlock(&percentile->mutex);
 }
 
 double sb_percentile_calculate(sb_percentile_t *percentile, double percent)
@@ -84,11 +87,13 @@ double sb_percentile_calculate(sb_percentile_t *percentile, double percent)
   unsigned long long ncur, nmax;
   unsigned int       i;
 
-  pthread_mutex_lock(&percentile->mutex);
+  //pthread_mutex_lock(&percentile->mutex);
+  pthread_spin_lock(&percentile->mutex);
 
   if (percentile->total == 0)
   {
-    pthread_mutex_unlock(&percentile->mutex);
+    //pthread_mutex_unlock(&percentile->mutex);
+    pthread_spin_unlock(&percentile->mutex);
     return 0.0;
   }
 
@@ -96,7 +101,8 @@ double sb_percentile_calculate(sb_percentile_t *percentile, double percent)
          percentile->size * sizeof(unsigned long long));
   nmax = floor(percentile->total * percent / 100 + 0.5);
 
-  pthread_mutex_unlock(&percentile->mutex);
+  //pthread_mutex_unlock(&percentile->mutex);
+  pthread_spin_unlock(&percentile->mutex);
 
   ncur = percentile->tmp[0];
   for (i = 1; i < percentile->size; i++)
@@ -111,15 +117,18 @@ double sb_percentile_calculate(sb_percentile_t *percentile, double percent)
 
 void sb_percentile_reset(sb_percentile_t *percentile)
 {
-  pthread_mutex_lock(&percentile->mutex);
+  //pthread_mutex_lock(&percentile->mutex);
+  pthread_spin_lock(&percentile->mutex);
   percentile->total = 0;
   memset(percentile->values, 0, percentile->size * sizeof(unsigned long long));
-  pthread_mutex_unlock(&percentile->mutex);
+  //pthread_mutex_unlock(&percentile->mutex);
+  pthread_spin_unlock(&percentile->mutex);
 }
 
 void sb_percentile_done(sb_percentile_t *percentile)
 {
-  pthread_mutex_destroy(&percentile->mutex);
+  //pthread_mutex_destroy(&percentile->mutex);
+  pthread_spin_destroy(&percentile->mutex);
   free(percentile->values);
   free(percentile->tmp);
 }

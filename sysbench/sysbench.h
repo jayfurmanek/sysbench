@@ -47,8 +47,10 @@
 #include "tests/sb_mutex.h"
 
 /* Macros to control global execution mutex */
-#define SB_THREAD_MUTEX_LOCK() pthread_mutex_lock(&sb_globals.exec_mutex) 
-#define SB_THREAD_MUTEX_UNLOCK() pthread_mutex_unlock(&sb_globals.exec_mutex)
+//#define SB_THREAD_MUTEX_LOCK() pthread_mutex_lock(&sb_globals.exec_mutex)
+#define SB_THREAD_MUTEX_LOCK() pthread_spin_lock(&sb_globals.exec_mutex)
+//#define SB_THREAD_MUTEX_UNLOCK() pthread_mutex_unlock(&sb_globals.exec_mutex)
+#define SB_THREAD_MUTEX_UNLOCK() pthread_spin_unlock(&sb_globals.exec_mutex)
 
 #define SB_MAX_RND 0x3fffffffu
 
@@ -198,7 +200,8 @@ typedef struct
 {
   sb_cmd_t        command;      /* command passed from command line */
   int             error;        /* global error - everyone exit */
-  pthread_mutex_t exec_mutex;   /* execution mutex */
+  //pthread_mutex_t exec_mutex;   /* execution mutex */
+  pthread_spinlock_t  exec_mutex;   /* execution mutex */
   sb_timer_t      exec_timer;   /* total execution timer */
   /* timers for cumulative reports */
   sb_timer_t      cumulative_timer1;

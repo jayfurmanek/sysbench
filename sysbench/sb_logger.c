@@ -69,7 +69,8 @@ static sb_timer_t *timers_copy;
   Mutex protecting timers.
   TODO: replace with an rwlock (and implement pthread rwlocks for Windows).
 */
-static pthread_mutex_t timers_mutex;
+//static pthread_mutex_t timers_mutex;
+static pthread_spinlock_t timers_mutex;
 
 static int text_handler_init(void);
 static int text_handler_process(log_msg_t *msg);
@@ -506,7 +507,8 @@ int oper_handler_init(void)
   for (i = 0; i < sb_globals.num_threads; i++)
     sb_timer_init(&timers[i]);
 
-  pthread_mutex_init(&timers_mutex, NULL);
+  //pthread_mutex_init(&timers_mutex, NULL);
+  pthread_spin_init(&timers_mutex, 0);
 
   return 0;
 }
@@ -523,19 +525,23 @@ int oper_handler_process(log_msg_t *msg)
 
   if (oper_msg->action == LOG_MSG_OPER_START)
   {
-    pthread_mutex_lock(&timers_mutex);
+    //pthread_mutex_lock(&timers_mutex);
+    pthread_spin_lock(&timers_mutex);
     sb_timer_start(timer);
-    pthread_mutex_unlock(&timers_mutex);
+    //pthread_mutex_unlock(&timers_mutex);
+    pthread_spin_unlock(&timers_mutex);
 
     return 0;
   }
 
-  pthread_mutex_lock(&timers_mutex);
+  //pthread_mutex_lock(&timers_mutex);
+  pthread_spin_lock(&timers_mutex);
 
   sb_timer_stop(timer);
   value = sb_timer_value(timer);
 
-  pthread_mutex_unlock(&timers_mutex);
+  //pthread_mutex_unlock(&timers_mutex);
+  pthread_spin_unlock(&timers_mutex);
 
   sb_percentile_update(&percentile, value);
 
@@ -565,7 +571,8 @@ int print_global_stats(void)
   nthreads = sb_globals.num_threads;
 
   /* Create a temporary copy of timers and reset them */
-  pthread_mutex_lock(&timers_mutex);
+  //pthread_mutex_lock(&timers_mutex);
+  pthread_spin_lock(&timers_mutex);
 
   memcpy(timers_copy, timers, sb_globals.num_threads * sizeof(sb_timer_t));
   for (i = 0; i < sb_globals.num_threads; i++)
@@ -577,7 +584,8 @@ int print_global_stats(void)
                                            sb_globals.percentile_rank);
   sb_percentile_reset(&percentile);
 
-  pthread_mutex_unlock(&timers_mutex);
+  //pthread_mutex_unlock(&timers_mutex);
+  pthread_spin_unlock(&timers_mutex);
 
   if (sb_globals.forced_shutdown_in_progress)
   {
@@ -696,7 +704,8 @@ int oper_handler_done(void)
   free(timers);
   free(timers_copy);
 
-  pthread_mutex_destroy(&timers_mutex);
+  //pthread_mutex_destroy(&timers_mutex);
+  pthread_spin_destroy(&timers_mutex);
 
   return 0;
 }
